@@ -1,0 +1,57 @@
+# Maven
+# Build your Java project and run tests with Apache Maven.
+# Add steps that analyze code, save build artifacts, deploy, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/java
+
+trigger:
+- main
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+  - stage: Build
+    jobs:
+      - job: Compile
+        displayName: 'Compile the code'
+        steps:
+          - task: Maven@3
+            inputs:
+             mavenPomFile: 'pom.xml'
+             goals: 'clean compile'
+             
+  - stage: Test
+    jobs:
+      - job: UniTest
+        displayName: 'Run Unit Tests'
+        dependsOn: Compile
+        steps:
+         - task: Maven@3
+           inputs:
+             mavenPomFile: 'pom.xml'
+             goals: 'test'
+           continueOnError: false
+
+  - stage: Package
+    jobs:
+      - job: PackageApp
+        displayName: 'Package the application'
+        dependsOn: Test
+        steps:
+          - task: Maven@3
+            inputs:
+              mavenPomFile: 'pom.xml'
+              goals: 'package'
+
+# - stage: Deploy # 可选的部署阶段
+  #   jobs:
+  #     - job: DeployApp
+  #       displayName: 'Deploy the application'
+  #       dependsOn: PackageApp
+  #       steps:
+  #         # 这里添加你的部署步骤，比如使用 Azure Web App Deploy 任务
+  #         - task: AzureWebApp@1
+  #           inputs:
+  #             azureSubscription: '<Your-Azure-Subscription>'
+  #             appName: '<Your-App-Name>'
+  #             package: '$(System.DefaultWorkingDirectory)/**/target/*.jar'
