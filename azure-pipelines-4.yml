@@ -11,9 +11,9 @@ pool:
 
 stages:
   - stage: Build
+    displayName: 'Build Stage'
     jobs:
       - job: Compile
-        displayName: 'Compile the code'
         steps:
           - task: Maven@3
             inputs:
@@ -21,22 +21,22 @@ stages:
              goals: 'clean compile'
              
   - stage: Test
+    displayName: 'Test Stage'
+    dependsOn: Build
     jobs:
       - job: UniTest
-        displayName: 'Run Unit Tests'
-        dependsOn: Compile
         steps:
          - task: Maven@3
            inputs:
              mavenPomFile: 'pom.xml'
              goals: 'test'
-           continueOnError: false
 
   - stage: Package
+    displayName: 'Package Stage'
+    dependsOn: Test
     jobs:
       - job: PackageApp
-        displayName: 'Package the application'
-        dependsOn: Test
+        
         steps:
           - task: Maven@3
             inputs:
