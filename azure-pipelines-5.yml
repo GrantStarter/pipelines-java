@@ -1,0 +1,61 @@
+# Maven
+# Build your Java project and run tests with Apache Maven.
+# Add steps that analyze code, save build artifacts, deploy, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/java
+
+trigger:
+  - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+stages:
+  # 阶段 1：编译主代码和测试代码
+  - stage: Build
+    displayName: "Build Stage"
+    jobs:
+      - job: Compile
+        steps:
+          - task: Maven@3
+            inputs:
+              mavenPomFile: 'pom.xml'
+              goals: 'compile test-compile'  # 同时编译主代码和测试代码
+          - task: PublishBuildArtifacts@1   # 发布编译结果
+            inputs:
+              PathtoPublish: 'target'
+              ArtifactName: 'build-output'
+
+  # 阶段 2：仅执行测试（复用编译结果）
+  - stage: Test
+    displayName: "Test Stage"
+    dependsOn: Build
+    jobs:
+      - job: UnitTest
+        steps:
+          - task: DownloadBuildArtifacts@0  # 下载编译产物
+            inputs:
+              artifactName: 'build-output'
+              downloadPath: 'target'
+          - task: Maven@3
+            inputs:
+              mavenPomFile: 'pom.xml'
+              goals: 'test'
+              options: '-Dmaven.main.skip -Dmaven.compile.skip'  # 跳过主代码和测试代码编译
+
+  # 阶段 3：仅打包（复用编译和测试结果）
+  - stage: Package
+    displayName: "Package Stage"
+    dependsOn: Test
+    jobs:
+      - job: PackageApp
+        steps:
+          - task: DownloadBuildArtifacts@0  # 复用之前所有产物
+            inputs:
+              artifactName: 'build-output'
+              downloadPath: 'target'
+          - task: Maven@3
+            inputs:
+              mavenPomFile: 'pom.xml'
+              goals: 'package'
+              options: '-Dmaven.main.skip -Dmaven.test.skip'  # 跳过编译和测试
+
